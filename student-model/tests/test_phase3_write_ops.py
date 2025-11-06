@@ -608,3 +608,421 @@ class TestUnlinkCommand:
         model = load_model()
         related = model["concepts"]["React Hooks"]["related_concepts"]
         assert len([r for r in related if r.lower() == "javascript closures"]) == 0
+
+
+
+
+
+class TestSessionEndCommand:
+    """Test the session-end batch operation command."""
+    
+    def test_session_end_update_only(self, temp_data_file, sample_model, capsys):
+        """Session-end with only update operations."""
+        from student import cmd_session_end, load_model
+        import argparse
+        
+        args = argparse.Namespace(
+            update=['React Hooks:75:high'],
+            struggle=None,
+            breakthrough=None
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert "📊 Session-End Updates:" in captured.out
+        assert "✅ Updated 'React Hooks'" in captured.out
+        assert "60% → 75%" in captured.out
+        assert "medium → high" in captured.out
+        
+        # Verify changes
+        model = load_model()
+        concept = model["concepts"]["React Hooks"]
+        assert concept["mastery"] == 75
+        assert concept["confidence"] == "high"
+    
+    def test_session_end_multiple_updates(self, temp_data_file, sample_model, capsys):
+        """Session-end can update multiple concepts."""
+        from student import cmd_session_end, cmd_add, load_model
+        import argparse
+        
+        # Add another concept
+        add_args = argparse.Namespace(
+            concept_name="TypeScript",
+            mastery=50,
+            confidence="medium",
+            related=""
+        )
+        cmd_add(add_args)
+        
+        # Update both concepts
+        args = argparse.Namespace(
+            update=[
+                'React Hooks:70:high',
+                'TypeScript:60:medium'
+            ],
+            struggle=None,
+            breakthrough=None
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert "React Hooks" in captured.out
+        assert "TypeScript" in captured.out
+        assert "2 operations" in captured.out
+        
+        # Verify both changed
+        model = load_model()
+        assert model["concepts"]["React Hooks"]["mastery"] == 70
+        assert model["concepts"]["TypeScript"]["mastery"] == 60
+    
+    def test_session_end_struggle_only(self, temp_data_file, sample_model, capsys):
+        """Session-end with only struggle operations."""
+        from student import cmd_session_end, load_model
+        import argparse
+        
+        args = argparse.Namespace(
+            update=None,
+            struggle=['React Hooks:confusion about dependency arrays'],
+            breakthrough=None
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert "✅ Added struggle to 'React Hooks'" in captured.out
+        assert "confusion about dependency arrays" in captured.out
+        
+        # Verify added
+        model = load_model()
+        struggles = model["concepts"]["React Hooks"]["struggles"]
+        assert "confusion about dependency arrays" in struggles
+    
+    def test_session_end_breakthrough_only(self, temp_data_file, sample_model, capsys):
+        """Session-end with only breakthrough operations."""
+        from student import cmd_session_end, load_model
+        import argparse
+        
+        args = argparse.Namespace(
+            update=None,
+            struggle=None,
+            breakthrough=['React Hooks:understood cleanup functions by tracing code']
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert "✅ Added breakthrough to 'React Hooks'" in captured.out
+        assert "💡" in captured.out
+        assert "understood cleanup functions" in captured.out
+        
+        # Verify added
+        model = load_model()
+        breakthroughs = model["concepts"]["React Hooks"]["breakthroughs"]
+        assert "understood cleanup functions by tracing code" in breakthroughs
+    
+    def test_session_end_all_operations(self, temp_data_file, sample_model, capsys):
+        """Session-end can combine all operation types."""
+        from student import cmd_session_end, load_model
+        import argparse
+        
+        args = argparse.Namespace(
+            update=['React Hooks:80:high'],
+            struggle=['React Hooks:still unclear about performance implications'],
+            breakthrough=['React Hooks:grasped the closure connection']
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert "✅ Updated 'React Hooks'" in captured.out
+        assert "✅ Added struggle" in captured.out
+        assert "✅ Added breakthrough" in captured.out
+        assert "3 operations" in captured.out
+        
+        # Verify all changes
+        model = load_model()
+        concept = model["concepts"]["React Hooks"]
+        assert concept["mastery"] == 80
+        assert concept["confidence"] == "high"
+        assert "still unclear about performance implications" in concept["struggles"]
+        assert "grasped the closure connection" in concept["breakthroughs"]
+    
+    def test_session_end_invalid_update_format(self, temp_data_file, sample_model, capsys):
+        """Session-end validates update format."""
+        from student import cmd_session_end
+        import argparse
+        
+        # Missing confidence
+        args = argparse.Namespace(
+            update=['React Hooks:75'],
+            struggle=None,
+            breakthrough=None
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert "❌ Errors encountered:" in captured.out
+        assert "Invalid update format" in captured.out
+        assert "expected 'Concept:mastery:confidence'" in captured.out
+    
+    def test_session_end_invalid_mastery(self, temp_data_file, sample_model, capsys):
+        """Session-end validates mastery range."""
+        from student import cmd_session_end, load_model
+        import argparse
+        
+        original_mastery = load_model()["concepts"]["React Hooks"]["mastery"]
+        
+        args = argparse.Namespace(
+            update=['React Hooks:150:high'],
+            struggle=None,
+            breakthrough=None
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert "❌ Errors encountered:" in captured.out
+        assert "Invalid mastery" in captured.out
+        assert "must be 0-100" in captured.out
+        
+        # Verify no change
+        model = load_model()
+        assert model["concepts"]["React Hooks"]["mastery"] == original_mastery
+    
+    def test_session_end_invalid_confidence(self, temp_data_file, sample_model, capsys):
+        """Session-end validates confidence values."""
+        from student import cmd_session_end, load_model
+        import argparse
+        
+        original_conf = load_model()["concepts"]["React Hooks"]["confidence"]
+        
+        args = argparse.Namespace(
+            update=['React Hooks:75:super-high'],
+            struggle=None,
+            breakthrough=None
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert "❌ Errors encountered:" in captured.out
+        assert "Invalid confidence" in captured.out
+        
+        # Verify no change
+        model = load_model()
+        assert model["concepts"]["React Hooks"]["confidence"] == original_conf
+    
+    def test_session_end_nonexistent_concept(self, temp_data_file, sample_model, capsys):
+            """Session-end handles nonexistent concepts gracefully."""
+            from student import cmd_session_end
+            import argparse
+
+            args = argparse.Namespace(
+                update=['Nonexistent:50:medium'],
+                struggle=['Nonexistent:some struggle'],
+                breakthrough=['Nonexistent:some breakthrough']
+            )
+
+            cmd_session_end(args)
+            captured = capsys.readouterr()
+
+            assert "❌ Errors encountered:" in captured.out
+            # CORRECTED: Count the occurrences of the full error string in the output.
+            assert captured.out.count("Concept 'Nonexistent' not found") == 3
+    ###
+    def test_session_end_partial_success(self, temp_data_file, sample_model, capsys):
+        """Session-end reports both successes and failures."""
+        from student import cmd_session_end, load_model
+        import argparse
+        
+        args = argparse.Namespace(
+            update=[
+                'React Hooks:75:high',  # Valid
+                'Nonexistent:50:medium'  # Invalid
+            ],
+            struggle=None,
+            breakthrough=None
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        # Should show both error and success
+        assert "❌ Errors encountered:" in captured.out
+        assert "Concept 'Nonexistent' not found" in captured.out
+        assert "✅ Updated 'React Hooks'" in captured.out
+        
+        # Valid change should be applied
+        model = load_model()
+        assert model["concepts"]["React Hooks"]["mastery"] == 75
+    
+    def test_session_end_duplicate_struggle(self, temp_data_file, sample_model, capsys):
+        """Session-end detects duplicate struggles."""
+        from student import cmd_session_end, cmd_struggle, load_model
+        import argparse
+        
+        # Add struggle first
+        struggle_args = argparse.Namespace(
+            concept_name="React Hooks",
+            description="dependency array confusion"
+        )
+        cmd_struggle(struggle_args)
+        
+        # Try to add same struggle via session-end
+        args = argparse.Namespace(
+            update=None,
+            struggle=['React Hooks:dependency array confusion'],
+            breakthrough=None
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert "ℹ️  Struggle already logged" in captured.out
+        
+        # Verify only one instance
+        model = load_model()
+        struggles = model["concepts"]["React Hooks"]["struggles"]
+        assert struggles.count("dependency array confusion") == 1
+    
+    def test_session_end_duplicate_breakthrough(self, temp_data_file, sample_model, capsys):
+        """Session-end detects duplicate breakthroughs."""
+        from student import cmd_session_end, cmd_breakthrough, load_model
+        import argparse
+        
+        # Add breakthrough first
+        bt_args = argparse.Namespace(
+            concept_name="React Hooks",
+            description="understood closure connection"
+        )
+        cmd_breakthrough(bt_args)
+        
+        # Try to add same breakthrough via session-end
+        args = argparse.Namespace(
+            update=None,
+            struggle=None,
+            breakthrough=['React Hooks:understood closure connection']
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert "ℹ️  Breakthrough already logged" in captured.out
+        
+        # Verify only one instance
+        model = load_model()
+        breakthroughs = model["concepts"]["React Hooks"]["breakthroughs"]
+        assert breakthroughs.count("understood closure connection") == 1
+    
+    def test_session_end_empty_operations(self, temp_data_file, sample_model, capsys):
+        """Session-end with no operations shows info message."""
+        from student import cmd_session_end
+        import argparse
+        
+        args = argparse.Namespace(
+            update=None,
+            struggle=None,
+            breakthrough=None
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert "ℹ️  No changes to apply" in captured.out
+        assert "Use --update, --struggle, or --breakthrough" in captured.out
+    
+    def test_session_end_invalid_struggle_format(self, temp_data_file, sample_model, capsys):
+        """Session-end validates struggle format."""
+        from student import cmd_session_end
+        import argparse
+        
+        args = argparse.Namespace(
+            update=None,
+            struggle=['No colon separator here'],
+            breakthrough=None
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert "❌ Errors encountered:" in captured.out
+        assert "Invalid struggle format" in captured.out
+        assert "expected 'Concept:description'" in captured.out
+    
+    def test_session_end_updates_last_reviewed(self, temp_data_file, sample_model):
+        """Session-end updates last_reviewed timestamp for all modified concepts."""
+        from student import cmd_session_end, load_model
+        import argparse
+        from datetime import datetime
+        
+        original_time = load_model()["concepts"]["React Hooks"]["last_reviewed"]
+        
+        args = argparse.Namespace(
+            update=['React Hooks:65:medium'],
+            struggle=['React Hooks:new struggle'],
+            breakthrough=['React Hooks:new breakthrough']
+        )
+        
+        cmd_session_end(args)
+        
+        model = load_model()
+        new_time = model["concepts"]["React Hooks"]["last_reviewed"]
+        
+        assert new_time != original_time
+        # Verify it's a valid ISO timestamp
+        datetime.fromisoformat(new_time)
+    
+    def test_session_end_colon_in_description(self, temp_data_file, sample_model, capsys):
+        """Session-end handles colons in struggle/breakthrough descriptions."""
+        from student import cmd_session_end, load_model
+        import argparse
+        
+        args = argparse.Namespace(
+            update=None,
+            struggle=['React Hooks:understood that cleanup runs before: next effect OR unmount'],
+            breakthrough=None
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert "✅ Added struggle" in captured.out
+        
+        # Verify the full description is preserved
+        model = load_model()
+        struggles = model["concepts"]["React Hooks"]["struggles"]
+        assert "understood that cleanup runs before: next effect OR unmount" in struggles
+    
+    def test_session_end_multiple_same_type(self, temp_data_file, sample_model, capsys):
+        """Session-end can add multiple struggles/breakthroughs to same concept."""
+        from student import cmd_session_end, load_model
+        import argparse
+        
+        args = argparse.Namespace(
+            update=None,
+            struggle=[
+                'React Hooks:struggle one',
+                'React Hooks:struggle two'
+            ],
+            breakthrough=[
+                'React Hooks:breakthrough one',
+                'React Hooks:breakthrough two'
+            ]
+        )
+        
+        cmd_session_end(args)
+        captured = capsys.readouterr()
+        
+        assert captured.out.count("✅ Added struggle") == 2
+        assert captured.out.count("✅ Added breakthrough") == 2
+        
+        # Verify all added
+        model = load_model()
+        concept = model["concepts"]["React Hooks"]
+        assert "struggle one" in concept["struggles"]
+        assert "struggle two" in concept["struggles"]
+        assert "breakthrough one" in concept["breakthroughs"]
+        assert "breakthrough two" in concept["breakthroughs"]

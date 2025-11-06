@@ -2,7 +2,7 @@
 """
 student.py - Student Model CLI Tool
 Tracks conceptual knowledge mastery across learning sessions.
-Phases 1, 2, and 3 Complete
+Phase 1, 2, and 3 Complete (including batch operations)
 """
 
 import json
@@ -366,23 +366,23 @@ def cmd_related(args):
 def cmd_add(args):
     """Add a new concept."""
     model = load_model()
-    
+
     # Check for existing concept
     if find_concept(model, args.concept_name):
         print(f"❌ Concept '{args.concept_name}' already exists.")
         print(f"   Use 'python student.py update' to modify it.")
         return
-    
+
     # Validate mastery range
     if not (0 <= args.mastery <= 100):
         print(f"❌ Mastery must be 0-100, got {args.mastery}")
         return
-    
+
     # Validate confidence (argparse choices handles this, but be explicit)
     if args.confidence not in ['low', 'medium', 'high']:
         print(f"❌ Confidence must be: low, medium, or high")
         return
-    
+
     # Create new concept
     model["concepts"][args.concept_name] = {
         "mastery": args.mastery,
@@ -393,17 +393,17 @@ def cmd_add(args):
         "breakthroughs": [],
         "related_concepts": []
     }
-    
+
     # Handle related concepts if provided
     if hasattr(args, 'related') and args.related:
         related_list = [r.strip() for r in args.related.split(',')]
         model["concepts"][args.concept_name]["related_concepts"] = related_list
-        
+
         # Warn about untracked related concepts
         for rel in related_list:
             if not find_concept(model, rel):
                 print(f"⚠️  Related concept '{rel}' not tracked yet.")
-    
+
     if save_model(model):
         print(f"✅ Added concept: '{args.concept_name}'")
         print(f"   Mastery: {args.mastery}%")
@@ -418,38 +418,38 @@ def cmd_update(args):
     """Update an existing concept's mastery and/or confidence."""
     model = load_model()
     concept_key = find_concept(model, args.concept_name)
-    
+
     if not concept_key:
         print(f"❌ Concept '{args.concept_name}' not found.")
         print(f"   Run 'python student.py list' to see tracked concepts.")
         return
-    
+
     concept = model["concepts"][concept_key]
     updated = []
-    
+
     # Update mastery if provided
     if args.mastery is not None:
         if not (0 <= args.mastery <= 100):
             print(f"❌ Mastery must be 0-100, got {args.mastery}")
             return
-        
+
         old = concept.get('mastery', 0)
         concept['mastery'] = args.mastery
         updated.append(f"mastery {old}% → {args.mastery}%")
-    
+
     # Update confidence if provided
     if args.confidence is not None:
         if args.confidence not in ['low', 'medium', 'high']:
             print(f"❌ Confidence must be: low, medium, or high")
             return
-        
+
         old = concept.get('confidence', 'unknown')
         concept['confidence'] = args.confidence
         updated.append(f"confidence {old} → {args.confidence}")
-    
+
     # Always update last_reviewed timestamp
     concept['last_reviewed'] = datetime.now().isoformat()
-    
+
     if updated:
         if save_model(model):
             print(f"✅ Updated '{concept_key}':")
@@ -466,24 +466,24 @@ def cmd_struggle(args):
     """Log a struggle with a concept."""
     model = load_model()
     concept_key = find_concept(model, args.concept_name)
-    
+
     if not concept_key:
         print(f"❌ Concept '{args.concept_name}' not found.")
         print(f"   Add it first: python student.py add \"{args.concept_name}\" 0 low")
         return
-    
+
     concept = model["concepts"][concept_key]
-    
+
     # Check for duplicate struggles
     struggles = concept.get('struggles', [])
     if args.description in struggles:
         print(f"ℹ️  This struggle already logged.")
         return
-    
+
     # Add the struggle
     concept.setdefault('struggles', []).append(args.description)
     concept['last_reviewed'] = datetime.now().isoformat()
-    
+
     if save_model(model):
         print(f"✅ Logged struggle for '{concept_key}'")
         print(f"   \"{args.description}\"")
@@ -495,24 +495,24 @@ def cmd_breakthrough(args):
     """Log a breakthrough with a concept."""
     model = load_model()
     concept_key = find_concept(model, args.concept_name)
-    
+
     if not concept_key:
         print(f"❌ Concept '{args.concept_name}' not found.")
         print(f"   Add it first: python student.py add \"{args.concept_name}\" 0 low")
         return
-    
+
     concept = model["concepts"][concept_key]
-    
+
     # Check for duplicate breakthroughs
     breakthroughs = concept.get('breakthroughs', [])
     if args.description in breakthroughs:
         print(f"ℹ️  This breakthrough already logged.")
         return
-    
+
     # Add the breakthrough
     concept.setdefault('breakthroughs', []).append(args.description)
     concept['last_reviewed'] = datetime.now().isoformat()
-    
+
     if save_model(model):
         print(f"✅ Logged breakthrough for '{concept_key}'")
         print(f"   💡 \"{args.description}\"")
@@ -523,15 +523,15 @@ def cmd_breakthrough(args):
 def cmd_link(args):
     """Link two concepts (create prerequisite relationship)."""
     model = load_model()
-    
+
     # Find both concepts
     concept_key = find_concept(model, args.concept_name)
     related_key = find_concept(model, args.related_concept)
-    
+
     if not concept_key:
         print(f"❌ Concept '{args.concept_name}' not found.")
         return
-    
+
     # Warn if related concept doesn't exist yet
     if not related_key:
         print(f"⚠️  '{args.related_concept}' not tracked yet.")
@@ -542,18 +542,18 @@ def cmd_link(args):
     else:
         # Use the exact key from the model
         link_name = related_key
-    
+
     concept = model["concepts"][concept_key]
     related_list = concept.setdefault('related_concepts', [])
-    
+
     # Check for duplicates (case-insensitive)
     if any(r.lower() == link_name.lower() for r in related_list):
         print(f"ℹ️  Already linked.")
         return
-    
+
     # Add the link
     related_list.append(link_name)
-    
+
     if save_model(model):
         print(f"✅ Linked '{concept_key}' → '{link_name}'")
     else:
@@ -563,34 +563,183 @@ def cmd_link(args):
 def cmd_unlink(args):
     """Remove a link between two concepts."""
     model = load_model()
-    
+
     concept_key = find_concept(model, args.concept_name)
-    
+
     if not concept_key:
         print(f"❌ Concept '{args.concept_name}' not found.")
         return
-    
+
     concept = model["concepts"][concept_key]
     related_list = concept.get('related_concepts', [])
-    
+
     # Find the related concept to remove (case-insensitive)
     removed = None
     for rel in related_list:
         if rel.lower() == args.related_concept.lower():
             removed = rel
             break
-    
+
     if not removed:
         print(f"ℹ️  No link found between '{concept_key}' and '{args.related_concept}'")
         return
-    
+
     # Remove the link
     related_list.remove(removed)
-    
+
     if save_model(model):
         print(f"✅ Unlinked '{concept_key}' ✗ '{removed}'")
     else:
         print("❌ Failed to save model")
+
+
+def cmd_session_end(args):
+    """
+    Batch operation for session end - update multiple concepts atomically.
+    
+    Format:
+        --update "Concept:mastery:confidence"
+        --struggle "Concept:description"
+        --breakthrough "Concept:description"
+    """
+    model = load_model()
+    
+    changes = []
+    errors = []
+    
+    # Process updates
+    if hasattr(args, 'update') and args.update:
+        for update_str in args.update:
+            try:
+                parts = update_str.split(':')
+                if len(parts) != 3:
+                    errors.append(f"Invalid update format: '{update_str}' (expected 'Concept:mastery:confidence')")
+                    continue
+                
+                concept_name, mastery_str, confidence = parts
+                mastery = int(mastery_str)
+                
+                # Validate
+                if not (0 <= mastery <= 100):
+                    errors.append(f"Invalid mastery for '{concept_name}': {mastery} (must be 0-100)")
+                    continue
+                
+                if confidence not in ['low', 'medium', 'high']:
+                    errors.append(f"Invalid confidence for '{concept_name}': {confidence} (must be low/medium/high)")
+                    continue
+                
+                # Find concept
+                concept_key = find_concept(model, concept_name)
+                if not concept_key:
+                    errors.append(f"Concept '{concept_name}' not found")
+                    continue
+                
+                concept = model["concepts"][concept_key]
+                old_mastery = concept.get('mastery', 0)
+                old_confidence = concept.get('confidence', 'unknown')
+                
+                # Apply changes
+                concept['mastery'] = mastery
+                concept['confidence'] = confidence
+                concept['last_reviewed'] = datetime.now().isoformat()
+                
+                changes.append(f"  ✅ Updated '{concept_key}': {old_mastery}% → {mastery}%, {old_confidence} → {confidence}")
+                
+            except ValueError:
+                errors.append(f"Invalid mastery value in: '{update_str}'")
+            except Exception as e:
+                errors.append(f"Error processing update '{update_str}': {str(e)}")
+    
+    # Process struggles
+    if hasattr(args, 'struggle') and args.struggle:
+        for struggle_str in args.struggle:
+            try:
+                # Format: "Concept:description"
+                if ':' not in struggle_str:
+                    errors.append(f"Invalid struggle format: '{struggle_str}' (expected 'Concept:description')")
+                    continue
+                
+                concept_name, description = struggle_str.split(':', 1)
+                
+                # Find concept
+                concept_key = find_concept(model, concept_name)
+                if not concept_key:
+                    errors.append(f"Concept '{concept_name}' not found")
+                    continue
+                
+                concept = model["concepts"][concept_key]
+                
+                # Check for duplicate
+                struggles = concept.get('struggles', [])
+                if description in struggles:
+                    changes.append(f"  ℹ️  Struggle already logged for '{concept_key}'")
+                    continue
+                
+                # Add struggle
+                concept.setdefault('struggles', []).append(description)
+                concept['last_reviewed'] = datetime.now().isoformat()
+                
+                changes.append(f"  ✅ Added struggle to '{concept_key}': \"{description}\"")
+                
+            except Exception as e:
+                errors.append(f"Error processing struggle '{struggle_str}': {str(e)}")
+    
+    # Process breakthroughs
+    if hasattr(args, 'breakthrough') and args.breakthrough:
+        for breakthrough_str in args.breakthrough:
+            try:
+                # Format: "Concept:description"
+                if ':' not in breakthrough_str:
+                    errors.append(f"Invalid breakthrough format: '{breakthrough_str}' (expected 'Concept:description')")
+                    continue
+                
+                concept_name, description = breakthrough_str.split(':', 1)
+                
+                # Find concept
+                concept_key = find_concept(model, concept_name)
+                if not concept_key:
+                    errors.append(f"Concept '{concept_name}' not found")
+                    continue
+                
+                concept = model["concepts"][concept_key]
+                
+                # Check for duplicate
+                breakthroughs = concept.get('breakthroughs', [])
+                if description in breakthroughs:
+                    changes.append(f"  ℹ️  Breakthrough already logged for '{concept_key}'")
+                    continue
+                
+                # Add breakthrough
+                concept.setdefault('breakthroughs', []).append(description)
+                concept['last_reviewed'] = datetime.now().isoformat()
+                
+                changes.append(f"  ✅ Added breakthrough to '{concept_key}': 💡 \"{description}\"")
+                
+            except Exception as e:
+                errors.append(f"Error processing breakthrough '{breakthrough_str}': {str(e)}")
+    
+    # Report errors
+    if errors:
+        print("❌ Errors encountered:")
+        for error in errors:
+            print(f"   {error}")
+        print()
+    
+    # Report changes
+    if changes:
+        print("📊 Session-End Updates:")
+        for change in changes:
+            print(change)
+        
+        # Save model
+        if save_model(model):
+            print(f"\n✅ All changes saved successfully ({len(changes)} operations)")
+        else:
+            print("\n❌ Failed to save model - changes may be lost")
+    else:
+        print("ℹ️  No changes to apply")
+        if not errors:
+            print("   Use --update, --struggle, or --breakthrough flags")
 
 
 # =============================================================================
@@ -635,7 +784,7 @@ def main():
     parser_add = subparsers.add_parser('add', help='Add a new concept')
     parser_add.add_argument('concept_name', type=str, help='Name of the concept')
     parser_add.add_argument('mastery', type=int, help='Mastery level (0-100)')
-    parser_add.add_argument('confidence', type=str, 
+    parser_add.add_argument('confidence', type=str,
                            choices=['low', 'medium', 'high'],
                            help='Confidence level')
     parser_add.add_argument('--related', type=str, default='',
@@ -646,7 +795,7 @@ def main():
     parser_update.add_argument('concept_name', type=str, help='Name of the concept')
     parser_update.add_argument('--mastery', type=int, default=None,
                               help='New mastery level (0-100)')
-    parser_update.add_argument('--confidence', type=str, 
+    parser_update.add_argument('--confidence', type=str,
                               choices=['low', 'medium', 'high'],
                               default=None,
                               help='New confidence level')
@@ -670,6 +819,27 @@ def main():
     parser_unlink = subparsers.add_parser('unlink', help='Remove link between concepts')
     parser_unlink.add_argument('concept_name', type=str, help='Main concept')
     parser_unlink.add_argument('related_concept', type=str, help='Related concept to unlink')
+
+    # Session-end command (Phase 3.2)
+    parser_session_end = subparsers.add_parser(
+        'session-end',
+        help='Batch update multiple operations at session end'
+    )
+    parser_session_end.add_argument(
+        '--update',
+        action='append',
+        help='Update concept: "Concept:mastery:confidence" (can specify multiple times)'
+    )
+    parser_session_end.add_argument(
+        '--struggle',
+        action='append',
+        help='Add struggle: "Concept:description" (can specify multiple times)'
+    )
+    parser_session_end.add_argument(
+        '--breakthrough',
+        action='append',
+        help='Add breakthrough: "Concept:description" (can specify multiple times)'
+    )
 
     # Parse arguments
     args = parser.parse_args()
@@ -701,6 +871,8 @@ def main():
         cmd_link(args)
     elif args.command == 'unlink':
         cmd_unlink(args)
+    elif args.command == 'session-end':
+        cmd_session_end(args)
 
 
 if __name__ == '__main__':

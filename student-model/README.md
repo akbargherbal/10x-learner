@@ -5,12 +5,14 @@ A CLI tool for tracking conceptual knowledge mastery across learning sessions, d
 ## Status: Phase 3 Complete ✅
 
 **Current Implementation:**
+
 - ✅ Core data operations (load, save, initialize)
 - ✅ Atomic writes with backup & corruption recovery
 - ✅ Case-insensitive concept search
 - ✅ **Read Operations** (`list`, `show`, `related`)
 - ✅ **Write Operations** (`add`, `update`, `struggle`, `breakthrough`, `link`, `unlink`)
-- ✅ Comprehensive test suite (66 passing tests, 73% coverage)
+- ✅ **Batch Operations** (`session-end` for efficient updates)
+- ✅ Comprehensive test suite (74 passing tests)
 - ✅ Full CRUD functionality
 
 **Next Steps:** Phase 4 - Documentation & Protocol Design
@@ -48,15 +50,16 @@ python student.py list
 # See detailed info
 python student.py show "React Hooks"
 
-# Update progress
-python student.py update "React Hooks" --mastery 60 --confidence high
-
-# Log learning insights
+# Update progress during a session
+python student.py update "React Hooks" --mastery 60
 python student.py struggle "React Hooks" "confused about dependency arrays"
 python student.py breakthrough "React Hooks" "understood closure connection"
 
-# Link related concepts
-python student.py link "React Hooks" "JavaScript Closures"
+# At the end of a session, use the efficient batch command
+python student.py session-end \
+  --update "React Hooks:75:high" \
+  --struggle "React Hooks:still unclear on performance" \
+  --breakthrough "React Hooks:grasped the cleanup function timing"
 ```
 
 ## Project Philosophy
@@ -81,7 +84,7 @@ See `docs/impl_plan.md` for full architectural vision.
 
 ### Read Operations
 
-```bash
+````bash
 # Show model information
 python student.py info
 
@@ -92,8 +95,7 @@ python student.py list
 python student.py show "Concept Name"
 
 # Show related concepts
-python student.py related "Concept Name"
-```
+python student.py related "Concept Name"```
 
 ### Write Operations
 
@@ -116,7 +118,13 @@ python student.py link "Concept Name" "Related Concept"
 
 # Unlink concepts
 python student.py unlink "Concept Name" "Related Concept"
-```
+
+# Batch update at session end (recommended workflow)
+python student.py session-end \
+  --update "Concept1:mastery:confidence" \
+  --struggle "Concept2:description" \
+  --breakthrough "Concept3:description"
+````
 
 ## Data Structure
 
@@ -146,14 +154,13 @@ pytest --cov=student --cov-report=html
 pytest -v
 ```
 
-**Current Test Coverage:** 73% (66 passing tests, 4 skipped)
+**Current Test Status:** 74 passing tests, 4 skipped
 
 ## Development Roadmap
 
-- [x] **Phase 1.1:** Project Setup
-- [x] **Phase 1.2:** Core Data Operations
+- [x] **Phase 1:** Project Setup & Core Data Operations
 - [x] **Phase 2:** Read Operations - `list`, `show`, `related`
-- [x] **Phase 3:** Write Operations - `add`, `update`, `struggle`, `breakthrough`, `link`, `unlink`
+- [x] **Phase 3:** Write Operations - `add`, `update`, `struggle`, `breakthrough`, `link`, `unlink`, `session-end`
 - [ ] **Phase 4:** Documentation & Protocol Design
 - [ ] **Phase 5:** Enhanced Features - Prerequisites, Misconceptions
 - [ ] **Phase 6:** Quality of Life - Interactive mode, Export
