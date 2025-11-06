@@ -1,0 +1,11 @@
+# Student Model CLI - Dependencies
+
+# Core dependencies
+# (None - uses only Python stdlib)
+
+# Development dependencies
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Optional - for future enhancements
+# colorama>=0.4.6  # For colored terminal output (Phase 6)

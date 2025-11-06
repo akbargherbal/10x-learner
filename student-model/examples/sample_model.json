@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "created": "2025-10-15T10:00:00",
+    "last_updated": "2025-11-06T14:30:00",
+    "student_profile": "Self-taught developer learning modern web development"
+  },
+  "concepts": {
+    "React Hooks": {
+      "mastery": 60,
+      "confidence": "medium",
+      "first_encountered": "2025-10-20T09:00:00",
+      "last_reviewed": "2025-11-05T15:30:00",
+      "struggles": [
+        "useEffect dependency arrays - when to include what",
+        "custom Hook patterns and when to extract logic"
+      ],
+      "breakthroughs": [
+        "understood that Hooks are just functions that use internal state",
+        "realized useEffect cleanup runs before next effect, not just on unmount"
+      ],
+      "related_concepts": [
+        "JavaScript Closures",
+        "React Core"
+      ]
+    },
+    "JavaScript Closures": {
+      "mastery": 55,
+      "confidence": "low",
+      "first_encountered": "2025-10-10T11:00:00",
+      "last_reviewed": "2025-10-29T10:00:00",
+      "struggles": [
+        "when variables are captured vs referenced",
+        "closure memory implications"
+      ],
+      "breakthroughs": [
+        "understood that closures 'remember' their lexical environment"
+      ],
+      "related_concepts": []
+    },
+    "React Context API": {
+      "mastery": 45,
+      "confidence": "low",
+      "first_encountered": "2025-10-28T13:00:00",
+      "last_reviewed": "2025-11-01T16:00:00",
+      "struggles": [
+        "how provider connects to consumers",
+        "when to use Context vs props drilling"
+      ],
+      "breakthroughs": [
+        "understood that Context avoids prop threading through intermediate components"
+      ],
+      "related_concepts": [
+        "React Hooks",
+        "React Core"
+      ]
+    },
+    "React Core": {
+      "mastery": 80,
+      "confidence": "high",
+      "first_encountered": "2025-09-15T10:00:00",
+      "last_reviewed": "2025-10-15T14:00:00",
+      "struggles": [],
+      "breakthroughs": [
+        "components are just functions that return JSX",
+        "React re-renders when state/props change"
+      ],
+      "related_concepts": []
+    },
+    "TypeScript Basics": {
+      "mastery": 70,
+      "confidence": "medium",
+      "first_encountered": "2025-09-01T09:00:00",
+      "last_reviewed": "2025-10-20T11:00:00",
+      "struggles": [
+        "when to use 'any' vs 'unknown'",
+        "generic type constraints"
+      ],
+      "breakthroughs": [
+        "interfaces vs types - mostly interchangeable",
+        "type inference reduces annotation burden"
+      ],
+      "related_concepts": []
+    }
+  },
+  "sessions": [
+    {
+      "date": "2025-11-01T16:00:00",
+      "duration_minutes": 45,
+      "concepts_covered": [
+        "React Context API"
+      ],
+      "notes": "Explored monkeytype theme system to understand Context pattern"
+    },
+    {
+      "date": "2025-11-05T15:30:00",
+      "duration_minutes": 60,
+      "concepts_covered": [
+        "React Hooks"
+      ],
+      "notes": "Deep dive into useEffect cleanup function timing"
+    }
+  ]
+}
