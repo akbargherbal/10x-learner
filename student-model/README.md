@@ -2,17 +2,18 @@
 
 A CLI tool for tracking conceptual knowledge mastery across learning sessions, designed to give AI tutors persistent memory of your learning journey.
 
-## Status: Phase 2 Complete ✅
+## Status: Phase 3 Complete ✅
 
 **Current Implementation:**
 - ✅ Core data operations (load, save, initialize)
 - ✅ Atomic writes with backup & corruption recovery
 - ✅ Case-insensitive concept search
-- ✅ **Read Operations (`list`, `show`, `related`)**
-- ✅ Comprehensive test suite
-- ✅ Full documentation
+- ✅ **Read Operations** (`list`, `show`, `related`)
+- ✅ **Write Operations** (`add`, `update`, `struggle`, `breakthrough`, `link`, `unlink`)
+- ✅ Comprehensive test suite (66 passing tests, 73% coverage)
+- ✅ Full CRUD functionality
 
-**Next Steps:** Phase 3 - Write Operations (`add`, `update`, `struggle`, `breakthrough` commands)
+**Next Steps:** Phase 4 - Documentation & Protocol Design
 
 ## Quick Start
 
@@ -35,6 +36,29 @@ python student.py init --profile "Your learning profile description"
 
 This creates `~/student_model.json` with the base structure.
 
+### Basic Usage
+
+```bash
+# Add a new concept
+python student.py add "React Hooks" 45 medium
+
+# View all concepts
+python student.py list
+
+# See detailed info
+python student.py show "React Hooks"
+
+# Update progress
+python student.py update "React Hooks" --mastery 60 --confidence high
+
+# Log learning insights
+python student.py struggle "React Hooks" "confused about dependency arrays"
+python student.py breakthrough "React Hooks" "understood closure connection"
+
+# Link related concepts
+python student.py link "React Hooks" "JavaScript Closures"
+```
+
 ## Project Philosophy
 
 This project implements a **persistent Student Model** system that:
@@ -46,7 +70,7 @@ This project implements a **persistent Student Model** system that:
 
 See `docs/impl_plan.md` for full architectural vision.
 
-## Current Features (Phase 1 & 2)
+## Current Features (Phases 1-3)
 
 ### Robust Data Persistence
 
@@ -55,12 +79,9 @@ See `docs/impl_plan.md` for full architectural vision.
 - **Corruption recovery**: Falls back to backup if JSON is corrupt
 - **Validation**: Ensures model structure before saving
 
-### Commands
+### Read Operations
 
 ```bash
-# Initialize new model
-python student.py init [--profile "description"]
-
 # Show model information
 python student.py info
 
@@ -74,9 +95,41 @@ python student.py show "Concept Name"
 python student.py related "Concept Name"
 ```
 
+### Write Operations
+
+```bash
+# Add new concept
+python student.py add "Concept Name" <mastery> <confidence>
+# Example: python student.py add "FastAPI" 30 low
+
+# Update existing concept
+python student.py update "Concept Name" [--mastery N] [--confidence LEVEL]
+
+# Log a struggle
+python student.py struggle "Concept Name" "description of difficulty"
+
+# Log a breakthrough
+python student.py breakthrough "Concept Name" "description of insight"
+
+# Link concepts (prerequisites/related)
+python student.py link "Concept Name" "Related Concept"
+
+# Unlink concepts
+python student.py unlink "Concept Name" "Related Concept"
+```
+
 ## Data Structure
 
-Your model is stored as JSON in `~/student_model.json`. See `examples/sample_model.json` for a complete example with concepts.
+Your model is stored as JSON in `~/student_model.json`. Each concept tracks:
+
+- **Mastery**: 0-100% understanding
+- **Confidence**: low, medium, or high
+- **Struggles**: List of difficulties encountered
+- **Breakthroughs**: List of insights gained
+- **Related Concepts**: Prerequisite relationships
+- **Timestamps**: First encountered, last reviewed
+
+See `examples/sample_model.json` for a complete example.
 
 ## Testing
 
@@ -88,14 +141,19 @@ pytest
 
 # Run with coverage
 pytest --cov=student --cov-report=html
+
+# Run with verbose output
+pytest -v
 ```
+
+**Current Test Coverage:** 73% (66 passing tests, 4 skipped)
 
 ## Development Roadmap
 
 - [x] **Phase 1.1:** Project Setup
 - [x] **Phase 1.2:** Core Data Operations
 - [x] **Phase 2:** Read Operations - `list`, `show`, `related`
-- [ ] **Phase 3:** Write Operations - `add`, `update`, `struggle`, `breakthrough`
+- [x] **Phase 3:** Write Operations - `add`, `update`, `struggle`, `breakthrough`, `link`, `unlink`
 - [ ] **Phase 4:** Documentation & Protocol Design
 - [ ] **Phase 5:** Enhanced Features - Prerequisites, Misconceptions
 - [ ] **Phase 6:** Quality of Life - Interactive mode, Export
@@ -111,219 +169,19 @@ See `docs/impl_plan.md` for detailed breakdown.
 3. **Robust**: Atomic writes, backups, validation
 4. **Terminal-Native**: CLI-first, scriptable
 5. **Test-Driven**: All features tested before release
-```
 
-#### B. Update `docs/student_model_usage.md`
+## Documentation
 
-The usage guide is currently a placeholder. Let's fill it with the commands we have so far.
+- `docs/student_model_usage.md` - Complete command reference
+- `docs/impl_plan.md` - Full implementation plan
+- `docs/workspace_protocol.md` - Code investigation workflow
+- `docs/complete_session_guide.md` - Integrated session examples
+- `docs/PHASE3_QUICK_START.md` - Quick integration guide
 
-```bash
-code ~/Jupyter_Notebooks/10x-learner/student-model/docs/student_model_usage.md
-```
+## Contributing
 
-Replace the placeholder content with this:
+This is a personal learning project, but suggestions and feedback are welcome!
 
-```markdown
-# Student Model CLI - Command Reference
+## License
 
-This guide provides a complete reference for all `student.py` commands.
-
-## Phase 1: Core Commands
-
-### `init`
-
-Initialize a new student model file at `~/student_model.json`.
-
-**Usage:**
-```bash
-python student.py init [--profile "Your profile description"]
-```
-
-**Arguments:**
-- `--profile` (optional): A string to describe the student. This is helpful for sharing your model with a tutor.
-
-**Behavior:**
-- If `~/student_model.json` already exists, it will prompt for confirmation before overwriting.
-- Creates a backup of the previous model if one existed.
-
----
-
-### `info`
-
-Display metadata and high-level statistics about your student model.
-
-**Usage:**
-```bash
-python student.py info
-```
-
-**Output:**
-- Model file location
-- Creation and last updated dates
-- Student profile
-- Total number of concepts and sessions
-- Average mastery across all concepts
-
----
-
-## Phase 2: Read Operations
-
-### `list`
-
-List all tracked concepts with summary information, sorted by mastery level (descending).
-
-**Usage:**
-```bash
-python student.py list
-```
-
-**Output Columns:**
-- **Indicator**: An emoji representing mastery level (✅, 🟡, 🟠, 🔴).
-- **Name**: The name of the concept.
-- **Mastery**: The mastery percentage.
-- **Confidence**: The confidence level (low, medium, high).
-- **Last Reviewed**: The date the concept was last updated.
-
----
-
-### `show`
-
-Display detailed information for a single concept.
-
-**Usage:**
-```bash
-python student.py show "Concept Name"
-```
-
-**Arguments:**
-- `Concept Name`: The name of the concept to show. The search is case-insensitive.
-
-**Output:**
-- Mastery and Confidence
-- First Encountered and Last Reviewed dates
-- A list of logged **Struggles** (⚠️)
-- A list of logged **Breakthroughs** (💡)
-- A list of **Related Concepts** (🔗) with their current mastery.
-
----
-
-### `related`
-
-List all concepts related to a specific concept.
-
-**Usage:**
-```bash
-python student.py related "Concept Name"
-```
-
-**Arguments:**
-- `Concept Name`: The name of the concept whose relations you want to see. The search is case-insensitive.
-
-**Output:**
-- A list of related concepts, each with its mastery, confidence, last reviewed date, and a status indicator (⚠️ LOW for mastery < 60%).
-```
-
-#### C. Create `PHASE2_COMPLETE.md`
-
-Finally, let's create the completion document for this phase.
-
-```bash
-code ~/Jupyter_Notebooks/10x-learner/student-model/docs/IMPL_PHASES/PHASE2_COMPLETE.md
-```
-
-Paste the following content into the new file:
-
-```markdown
-# Phase 2: Complete ✅
-
-**Completion Date:** [Today's Date]
-**Time Investment:** ~2 hours
-**Status:** All deliverables met
-
----
-
-## Phase 2: Read Operations ✅
-
-**Goal:** Rich, informative output for context gathering.
-
-### Features Implemented
-
-#### CLI Commands
-- ✅ `python student.py list` - Lists all concepts, sorted by mastery, with status indicators.
-- ✅ `python student.py show "Concept Name"` - Shows full details for a concept, including struggles, breakthroughs, and related concepts.
-- ✅ `python student.py related "Concept Name"` - Shows related concepts with their mastery levels, flagging low-mastery prerequisites.
-
-#### Key Features
-- **Rich Formatting**: Output uses emojis (📚, 📊, ⚠️, 💡, 🔗) for quick visual parsing.
-- **User-Friendly**: All concept lookups are case-insensitive.
-- **Graceful Errors**: Commands handle cases where concepts are not found or the model is empty.
-- **LLM-Friendly**: Output is designed for easy copy-pasting into an AI tutor session.
-
-### Test Coverage
-
-**`tests/test_phase2_read_ops.py`** - 12 tests covering:
-- ✅ `list` command with an empty model.
-- ✅ `list` command displaying and sorting concepts correctly.
-- ✅ `show` command handling of non-existent concepts.
-- ✅ `show` command displaying all concept details.
-- ✅ `show` command case-insensitivity.
-- ✅ `related` command handling of non-existent concepts.
-- ✅ `related` command with no relations.
-- ✅ `related` command displaying relations and flagging low mastery.
-
-**Test Status:** All read operations have 100% test coverage.
-
----
-
-## Verification
-
-### Manual Testing
-```bash
-# 1. Copy sample data
-cp examples/sample_model.json ~/student_model.json
-
-# 2. Run list command
-python student.py list
-
-# 3. Run show command
-python student.py show "React Hooks"
-
-# 4. Run related command
-python student.py related "React Hooks"
-```
-All commands produce the expected rich, formatted output.
-
----
-
-## What's Next: Phase 3
-
-**Goal:** Write Operations (adding and modifying concepts)
-
-### Commands to Implement
-```bash
-python student.py add "Concept" 50 medium
-python student.py update "Concept" --mastery 70
-python student.py struggle "Concept" "description"
-python student.py breakthrough "Concept" "description"
-```
-
-### Estimated Time
-4-5 hours
-
-### Focus Areas
-1.  Input validation (mastery is 0-100, confidence is enum).
-2.  Preventing duplicate concepts on `add`.
-3.  Atomically updating the model file after each operation.
-
----
-
-## Success Criteria Met
-
-✅ All read operations are functional.
-✅ Output is rich, informative, and LLM-friendly.
-✅ Full test coverage for new functionality.
-✅ Project is ready for Phase 3.
-
----
-
-**Signed:** Phase 2 Complete ✅
+[Your chosen license]
