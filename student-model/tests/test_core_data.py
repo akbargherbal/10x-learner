@@ -11,8 +11,6 @@ Tests cover:
 
 import json
 import pytest
-import tempfile
-import shutil
 from pathlib import Path
 from datetime import datetime
 
@@ -30,19 +28,7 @@ from student import (
     DATA_FILE
 )
 
-@pytest.fixture
-def temp_data_file(monkeypatch):
-    """Create a temporary data file for testing."""
-    temp_dir = tempfile.mkdtemp()
-    temp_file = Path(temp_dir) / "test_student_model.json"
-    
-    # Monkeypatch the DATA_FILE constant
-    monkeypatch.setattr('student.DATA_FILE', temp_file)
-    
-    yield temp_file
-    
-    # Cleanup
-    shutil.rmtree(temp_dir)
+# The temp_data_file fixture is now in conftest.py and will be automatically discovered.
 
 class TestDefaultModel:
     """Test default model structure."""
@@ -101,10 +87,8 @@ class TestValidation:
 class TestSaveLoad:
     """Test save and load operations."""
     
-    def test_save_and_load_roundtrip(self, temp_data_file, monkeypatch):
+    def test_save_and_load_roundtrip(self, temp_data_file):
         """Saved model can be loaded back."""
-        monkeypatch.setattr('student.DATA_FILE', temp_data_file)
-        
         model = get_default_model()
         model["metadata"]["student_profile"] = "Test Student"
         
@@ -116,10 +100,8 @@ class TestSaveLoad:
         loaded = load_model()
         assert loaded["metadata"]["student_profile"] == "Test Student"
     
-    def test_save_creates_backup(self, temp_data_file, monkeypatch):
+    def test_save_creates_backup(self, temp_data_file):
         """Saving creates backup of existing file."""
-        monkeypatch.setattr('student.DATA_FILE', temp_data_file)
-        
         # Create initial model
         model1 = get_default_model()
         model1["metadata"]["student_profile"] = "Version 1"
@@ -139,10 +121,8 @@ class TestSaveLoad:
             backup_data = json.load(f)
         assert backup_data["metadata"]["student_profile"] == "Version 1"
     
-    def test_save_updates_timestamp(self, temp_data_file, monkeypatch):
+    def test_save_updates_timestamp(self, temp_data_file):
         """Saving updates last_updated timestamp."""
-        monkeypatch.setattr('student.DATA_FILE', temp_data_file)
-        
         model = get_default_model()
         original_time = model["metadata"]["last_updated"]
         
@@ -155,10 +135,8 @@ class TestSaveLoad:
         
         assert loaded["metadata"]["last_updated"] != original_time
     
-    def test_save_refuses_invalid_model(self, temp_data_file, monkeypatch, capsys):
+    def test_save_refuses_invalid_model(self, temp_data_file, capsys):
         """Save refuses to write invalid model."""
-        monkeypatch.setattr('student.DATA_FILE', temp_data_file)
-        
         model = get_default_model()
         del model["metadata"]  # Make invalid
         
@@ -171,20 +149,16 @@ class TestSaveLoad:
 class TestLoadErrors:
     """Test load error handling."""
     
-    def test_load_missing_file(self, temp_data_file, monkeypatch, capsys):
+    def test_load_missing_file(self, temp_data_file, capsys):
         """Loading missing file returns default model."""
-        monkeypatch.setattr('student.DATA_FILE', temp_data_file)
-        
         model = load_model()
         assert validate_model(model) is True
         
         captured = capsys.readouterr()
         assert "No model found" in captured.out
     
-    def test_load_corrupt_json(self, temp_data_file, monkeypatch, capsys):
+    def test_load_corrupt_json(self, temp_data_file, capsys):
         """Loading corrupt JSON falls back to default."""
-        monkeypatch.setattr('student.DATA_FILE', temp_data_file)
-        
         # Write corrupt JSON
         with open(temp_data_file, 'w') as f:
             f.write("{ this is not valid json }")
@@ -195,10 +169,8 @@ class TestLoadErrors:
         captured = capsys.readouterr()
         assert "Corrupt JSON" in captured.out
     
-    def test_load_corrupt_json_with_backup(self, temp_data_file, monkeypatch, capsys):
+    def test_load_corrupt_json_with_backup(self, temp_data_file, capsys):
         """Loading corrupt JSON restores from backup."""
-        monkeypatch.setattr('student.DATA_FILE', temp_data_file)
-        
         # Create good backup
         backup = temp_data_file.with_suffix('.json.backup')
         good_model = get_default_model()
@@ -216,10 +188,8 @@ class TestLoadErrors:
         captured = capsys.readouterr()
         assert "Restored from backup" in captured.out
     
-    def test_load_invalid_structure(self, temp_data_file, monkeypatch, capsys):
+    def test_load_invalid_structure(self, temp_data_file, capsys):
         """Loading invalid structure returns default."""
-        monkeypatch.setattr('student.DATA_FILE', temp_data_file)
-        
         # Write valid JSON but invalid structure
         with open(temp_data_file, 'w') as f:
             json.dump({"wrong": "structure"}, f)
@@ -233,19 +203,15 @@ class TestLoadErrors:
 class TestInitialize:
     """Test model initialization."""
     
-    def test_initialize_creates_file(self, temp_data_file, monkeypatch):
+    def test_initialize_creates_file(self, temp_data_file):
         """Initialize creates new model file."""
-        monkeypatch.setattr('student.DATA_FILE', temp_data_file)
-        
         model = initialize_model("Test Profile")
         
         assert temp_data_file.exists()
         assert model["metadata"]["student_profile"] == "Test Profile"
     
-    def test_initialize_default_profile(self, temp_data_file, monkeypatch):
+    def test_initialize_default_profile(self, temp_data_file):
         """Initialize with no profile creates empty profile."""
-        monkeypatch.setattr('student.DATA_FILE', temp_data_file)
-        
         model = initialize_model()
         assert model["metadata"]["student_profile"] == ""
 
@@ -291,10 +257,8 @@ class TestFindConcept:
 class TestAtomicWrites:
     """Test atomic write behavior."""
     
-    def test_atomic_write_uses_temp_file(self, temp_data_file, monkeypatch):
+    def test_atomic_write_uses_temp_file(self, temp_data_file):
         """Save uses temp file for atomic operation."""
-        monkeypatch.setattr('student.DATA_FILE', temp_data_file)
-        
         model = get_default_model()
         save_model(model)
         
@@ -302,10 +266,8 @@ class TestAtomicWrites:
         temp = temp_data_file.with_suffix('.json.tmp')
         assert not temp.exists()
     
-    def test_backup_preserved_on_save_failure(self, temp_data_file, monkeypatch):
+    def test_backup_preserved_on_save_failure(self, temp_data_file):
         """Backup is not corrupted if save fails."""
-        monkeypatch.setattr('student.DATA_FILE', temp_data_file)
-        
         # Create good initial state
         model1 = get_default_model()
         model1["metadata"]["student_profile"] = "Good Backup"

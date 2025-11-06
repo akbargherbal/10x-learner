@@ -201,6 +201,167 @@ def cmd_info(args):
         avg_mastery = sum(masteries) / len(masteries)
         print(f"   Avg Mastery:    {avg_mastery:.1f}%")
 
+
+"""
+Phase 2 additions to student.py - Read Operations
+Add these functions and command handlers to your existing student.py
+"""
+
+# Add these command handler functions after cmd_info()
+
+def cmd_list(args):
+    """List all concepts with summary info."""
+    model = load_model()
+    
+    if not model['concepts']:
+        print("📚 No concepts tracked yet.")
+        print("   Add your first concept with: python student.py add \"Concept Name\" 50 medium")
+        return
+    
+    print(f"📚 Tracked Concepts ({len(model['concepts'])} total)\n")
+    
+    # Sort by mastery (descending) for better overview
+    sorted_concepts = sorted(
+        model['concepts'].items(),
+        key=lambda x: x[1].get('mastery', 0),
+        reverse=True
+    )
+    
+    for name, data in sorted_concepts:
+        mastery = data.get('mastery', 0)
+        confidence = data.get('confidence', 'unknown')
+        last_reviewed = data.get('last_reviewed', 'never')
+        
+        # Format last reviewed date
+        if last_reviewed != 'never':
+            last_reviewed = last_reviewed.split('T')[0]
+        
+        # Mastery indicator
+        if mastery >= 80:
+            indicator = "✅"
+        elif mastery >= 60:
+            indicator = "🟡"
+        elif mastery >= 40:
+            indicator = "🟠"
+        else:
+            indicator = "🔴"
+        
+        # Confidence indicator
+        conf_display = confidence
+        if confidence == "low":
+            conf_display = "⚠️  low"
+        
+        print(f"{indicator} {name:<40} {mastery:>3}%  {conf_display:<12} (last: {last_reviewed})")
+    
+    print(f"\nLegend: ✅ 80%+  🟡 60-79%  🟠 40-59%  🔴 <40%")
+
+
+def cmd_show(args):
+    """Show detailed information about a specific concept."""
+    model = load_model()
+    concept_key = find_concept(model, args.concept_name)
+    
+    if not concept_key:
+        print(f"❌ Concept '{args.concept_name}' not found.")
+        print(f"   Run 'python student.py list' to see tracked concepts.")
+        return
+    
+    concept = model['concepts'][concept_key]
+    
+    print(f"📊 Concept: {concept_key}")
+    print(f"   Mastery:          {concept.get('mastery', 'N/A')}%")
+    print(f"   Confidence:       {concept.get('confidence', 'N/A')}")
+    
+    # Dates
+    first = concept.get('first_encountered', 'N/A')
+    last = concept.get('last_reviewed', 'N/A')
+    if first != 'N/A':
+        first = first.split('T')[0]
+    if last != 'N/A':
+        last = last.split('T')[0]
+    
+    print(f"   First Encountered: {first}")
+    print(f"   Last Reviewed:     {last}")
+    
+    # Struggles
+    struggles = concept.get('struggles', [])
+    if struggles:
+        print(f"   ⚠️  Struggles:")
+        for struggle in struggles:
+            print(f"      - {struggle}")
+    
+    # Breakthroughs
+    breakthroughs = concept.get('breakthroughs', [])
+    if breakthroughs:
+        print(f"   💡 Breakthroughs:")
+        for breakthrough in breakthroughs:
+            print(f"      - {breakthrough}")
+    
+    # Related concepts
+    related = concept.get('related_concepts', [])
+    if related:
+        print(f"   🔗 Related Concepts:")
+        for rel_name in related:
+            rel_key = find_concept(model, rel_name)
+            if rel_key and rel_key in model['concepts']:
+                rel_data = model['concepts'][rel_key]
+                rel_mastery = rel_data.get('mastery', 0)
+                rel_last = rel_data.get('last_reviewed', 'never')
+                if rel_last != 'never':
+                    rel_last = rel_last.split('T')[0]
+                
+                # Flag low mastery prerequisites
+                if rel_mastery < 60:
+                    print(f"      - {rel_name} (Mastery: {rel_mastery}%, Last: {rel_last}) ⚠️ LOW")
+                else:
+                    print(f"      - {rel_name} (Mastery: {rel_mastery}%, Last: {rel_last}) ✓")
+            else:
+                print(f"      - {rel_name} (not tracked)")
+
+
+def cmd_related(args):
+    """Show concepts related to a specific concept."""
+    model = load_model()
+    concept_key = find_concept(model, args.concept_name)
+    
+    if not concept_key:
+        print(f"❌ Concept '{args.concept_name}' not found.")
+        return
+    
+    concept = model['concepts'][concept_key]
+    related = concept.get('related_concepts', [])
+    
+    if not related:
+        print(f"🔗 No related concepts tracked for '{concept_key}'")
+        print(f"   Link concepts with: python student.py link \"{concept_key}\" \"Related Concept\"")
+        return
+    
+    print(f"🔗 Concepts related to '{concept_key}':")
+    
+    for rel_name in related:
+        rel_key = find_concept(model, rel_name)
+        if rel_key and rel_key in model['concepts']:
+            rel_data = model['concepts'][rel_key]
+            rel_mastery = rel_data.get('mastery', 0)
+            rel_confidence = rel_data.get('confidence', 'unknown')
+            rel_last = rel_data.get('last_reviewed', 'never')
+            
+            if rel_last != 'never':
+                rel_last = rel_last.split('T')[0]
+            
+            # Status indicator
+            if rel_mastery < 60:
+                status = "⚠️ LOW"
+            else:
+                status = "✓"
+            
+            print(f"   - {rel_name:<40} {rel_mastery:>3}%  {rel_confidence:<10}  (last: {rel_last}) {status}")
+        else:
+            print(f"   - {rel_name} (not tracked yet)")
+
+
+# Update the main() function to add new subparsers:
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -218,6 +379,17 @@ def main():
     # Info command
     parser_info = subparsers.add_parser('info', help='Show model information')
     
+    # List command (NEW)
+    parser_list = subparsers.add_parser('list', help='List all tracked concepts')
+    
+    # Show command (NEW)
+    parser_show = subparsers.add_parser('show', help='Show detailed concept information')
+    parser_show.add_argument('concept_name', type=str, help='Name of the concept to show')
+    
+    # Related command (NEW)
+    parser_related = subparsers.add_parser('related', help='Show related concepts')
+    parser_related.add_argument('concept_name', type=str, help='Name of the concept')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -229,6 +401,13 @@ def main():
         cmd_init(args)
     elif args.command == 'info':
         cmd_info(args)
+    elif args.command == 'list':
+        cmd_list(args)
+    elif args.command == 'show':
+        cmd_show(args)
+    elif args.command == 'related':
+        cmd_related(args)
+
 
 if __name__ == '__main__':
     main()
