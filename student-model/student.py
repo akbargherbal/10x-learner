@@ -101,21 +101,22 @@ def load_model() -> Dict[str, Any]:
         print(f"❌ Unexpected error loading model: {str(e)}")
         return get_default_model()
 
+
 def save_model(model: Dict[str, Any]) -> bool:
     """
     Save model to disk with atomic writes and backup.
     Returns True on success, False on failure.
     """
     try:
-        # Update timestamp
-        model["metadata"]["last_updated"] = datetime.now().isoformat()
-        
         # Validate before saving
         if not validate_model(model):
             print("❌ Error: Model structure is invalid, refusing to save")
             return False
         
-        # Backup existing file
+        # Update timestamp
+        model["metadata"]["last_updated"] = datetime.now().isoformat()
+        
+        # Backup existing file (before any write operations)
         if DATA_FILE.exists():
             backup = DATA_FILE.with_suffix('.json.backup')
             shutil.copy(DATA_FILE, backup)
@@ -127,6 +128,12 @@ def save_model(model: Dict[str, Any]) -> bool:
         
         # Atomic rename
         temp.replace(DATA_FILE)
+        
+        # Create backup after successful save (if it doesn't exist yet)
+        backup = DATA_FILE.with_suffix('.json.backup')
+        if not backup.exists():
+            shutil.copy(DATA_FILE, backup)
+        
         return True
     
     except Exception as e:
