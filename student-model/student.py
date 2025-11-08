@@ -28,6 +28,7 @@ def get_default_model() -> Dict[str, Any]:
             "student_profile": ""
         },
         "concepts": {},
+        "misconceptions": [],
         "sessions": []
     }
 
@@ -742,6 +743,165 @@ def cmd_session_end(args):
             print("   Use --update, --struggle, or --breakthrough flags")
 
 
+
+# PHASE 5: Misconception tracking
+
+def cmd_misconception_add(args):
+    """Add a misconception for a concept."""
+    model = load_model()
+    
+    # Verify concept exists
+    concept_key = find_concept(model, args.concept_name)
+    if not concept_key:
+        print(f"❌ Concept '{args.concept_name}' not found.")
+        print(f"   Add it first: python student.py add \"{args.concept_name}\" 0 low")
+        return
+    
+    # Create misconception entry
+    misconception = {
+        "concept": concept_key,
+        "belief": args.belief,
+        "correction": args.correction,
+        "date_identified": datetime.now().isoformat(),
+        "resolved": False,
+        "date_resolved": None
+    }
+    
+    # Check for duplicate (same concept + same belief)
+    misconceptions = model.setdefault("misconceptions", [])
+    for m in misconceptions:
+        if (m["concept"].lower() == concept_key.lower() and 
+            m["belief"].lower() == args.belief.lower()):
+            print(f"ℹ️  This misconception already logged.")
+            return
+    
+    # Add misconception
+    misconceptions.append(misconception)
+    
+    if save_model(model):
+        print(f"✅ Logged misconception for '{concept_key}'")
+        print(f"   Belief: \"{args.belief}\"")
+        print(f"   Correction: \"{args.correction}\"")
+    else:
+        print("❌ Failed to save model")
+
+
+def cmd_misconception_resolve(args):
+    """Mark a misconception as resolved."""
+    model = load_model()
+    
+    concept_key = find_concept(model, args.concept_name)
+    if not concept_key:
+        print(f"❌ Concept '{args.concept_name}' not found.")
+        return
+    
+    # Find unresolved misconceptions for this concept
+    misconceptions = model.get("misconceptions", [])
+    concept_misconceptions = [
+        (i, m) for i, m in enumerate(misconceptions)
+        if m["concept"].lower() == concept_key.lower() and not m["resolved"]
+    ]
+    
+    if not concept_misconceptions:
+        print(f"ℹ️  No unresolved misconceptions for '{concept_key}'")
+        return
+    
+    # Validate index
+    if args.index >= len(concept_misconceptions):
+        print(f"❌ Index {args.index} out of range (0-{len(concept_misconceptions)-1})")
+        print(f"   Run: python student.py misconception list \"{concept_key}\" --unresolved")
+        return
+    
+    # Get the actual index in the misconceptions array
+    actual_index, misconception = concept_misconceptions[args.index]
+    
+    # Mark as resolved
+    misconceptions[actual_index]["resolved"] = True
+    misconceptions[actual_index]["date_resolved"] = datetime.now().isoformat()
+    
+    if save_model(model):
+        print(f"✅ Resolved misconception for '{concept_key}'")
+        print(f"   \"{misconception['belief']}\"")
+    else:
+        print("❌ Failed to save model")
+
+
+def cmd_misconception_list(args):
+    """List all misconceptions, optionally filtered."""
+    model = load_model()
+    
+    misconceptions = model.get("misconceptions", [])
+    
+    if not misconceptions:
+        print("📚 No misconceptions tracked yet.")
+        print("   Add one with: python student.py misconception add \"Concept\" --belief \"...\" --correction \"...\"")
+        return
+    
+    # Filter by concept if specified
+    display_concept = None
+    if hasattr(args, 'concept_name') and args.concept_name:
+        concept_key = find_concept(model, args.concept_name)
+        if not concept_key:
+            print(f"❌ Concept '{args.concept_name}' not found.")
+            return
+        misconceptions = [m for m in misconceptions if m["concept"].lower() == concept_key.lower()]
+        display_concept = concept_key
+    
+    # Filter by resolved status if specified
+    if hasattr(args, 'resolved_only') and args.resolved_only:
+        misconceptions = [m for m in misconceptions if m["resolved"]]
+    elif hasattr(args, 'unresolved_only') and args.unresolved_only:
+        misconceptions = [m for m in misconceptions if not m["resolved"]]
+    
+    # Header
+    if display_concept:
+        status_filter = ""
+        if hasattr(args, 'resolved_only') and args.resolved_only:
+            status_filter = " (resolved only)"
+        elif hasattr(args, 'unresolved_only') and args.unresolved_only:
+            status_filter = " (unresolved only)"
+        print(f"🐛 Misconceptions for '{display_concept}'{status_filter}:\n")
+    else:
+        print(f"🐛 All Misconceptions ({len(misconceptions)} total):\n")
+    
+    if not misconceptions:
+        print("   None found.")
+        return
+    
+    # Group by concept
+    by_concept = {}
+    for m in misconceptions:
+        concept = m["concept"]
+        by_concept.setdefault(concept, []).append(m)
+    
+    # Display grouped by concept
+    for concept, items in sorted(by_concept.items()):
+        print(f"📌 {concept}:")
+        
+        # Get unresolved items for this concept (for indexing)
+        unresolved_items = [m for m in items if not m["resolved"]]
+        
+        for i, m in enumerate(items):
+            status = "✅ Resolved" if m["resolved"] else "⚠️  Active"
+            date = m["date_identified"].split('T')[0]
+            
+            # Show index only for unresolved items
+            if not m["resolved"]:
+                index = unresolved_items.index(m)
+                print(f"   [{index}] {status}")
+            else:
+                print(f"       {status}")
+            
+            print(f"       Belief: \"{m['belief']}\"")
+            print(f"       Correction: \"{m['correction']}\"")
+            print(f"       Identified: {date}")
+            
+            if m["resolved"] and m["date_resolved"]:
+                resolved_date = m["date_resolved"].split('T')[0]
+                print(f"       Resolved: {resolved_date}")
+            print()
+
+
 # =============================================================================
 # MAIN CLI ENTRY POINT
 # =============================================================================
@@ -841,6 +1001,53 @@ def main():
         help='Add breakthrough: "Concept:description" (can specify multiple times)'
     )
 
+    # PHASE 5 COMMANDS
+
+    # Misconception commands (Phase 5.2)
+    parser_misconception = subparsers.add_parser(
+        'misconception',
+        help='Track and manage misconceptions'
+    )
+    
+    misconception_subparsers = parser_misconception.add_subparsers(
+        dest='misconception_command',
+        help='Misconception operations'
+    )
+    
+    # misconception add
+    parser_misc_add = misconception_subparsers.add_parser(
+        'add',
+        help='Add a misconception'
+    )
+    parser_misc_add.add_argument('concept_name', type=str, help='Concept name')
+    parser_misc_add.add_argument('--belief', type=str, required=True,
+                                help='The incorrect belief')
+    parser_misc_add.add_argument('--correction', type=str, required=True,
+                                help='The correct understanding')
+    
+    # misconception resolve
+    parser_misc_resolve = misconception_subparsers.add_parser(
+        'resolve',
+        help='Mark a misconception as resolved'
+    )
+    parser_misc_resolve.add_argument('concept_name', type=str, help='Concept name')
+    parser_misc_resolve.add_argument('index', type=int,
+                                    help='Index of misconception to resolve (from list)')
+    
+    # misconception list
+    parser_misc_list = misconception_subparsers.add_parser(
+        'list',
+        help='List misconceptions'
+    )
+    parser_misc_list.add_argument('concept_name', type=str, nargs='?', default=None,
+                                 help='Filter by concept (optional)')
+    parser_misc_list.add_argument('--resolved', dest='resolved_only',
+                                 action='store_true',
+                                 help='Show only resolved misconceptions')
+    parser_misc_list.add_argument('--unresolved', dest='unresolved_only',
+                                 action='store_true',
+                                 help='Show only unresolved misconceptions')
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -873,7 +1080,17 @@ def main():
         cmd_unlink(args)
     elif args.command == 'session-end':
         cmd_session_end(args)
-
+    elif args.command == 'misconception':
+        if not args.misconception_command:
+            print("❌ Please specify: add, resolve, or list")
+            print("   Usage: python student.py misconception {add|resolve|list}")
+            return
+        if args.misconception_command == 'add':
+            cmd_misconception_add(args)
+        elif args.misconception_command == 'resolve':
+            cmd_misconception_resolve(args)
+        elif args.misconception_command == 'list':
+            cmd_misconception_list(args)
 
 if __name__ == '__main__':
     main()

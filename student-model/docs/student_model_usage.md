@@ -429,6 +429,214 @@ python student.py unlink "React Hooks" "JavaScript Closures"
 ✅ Unlinked 'React Hooks' ✗ 'JavaScript Closures'
 ```
 
+### `misconception add`
+
+Log an incorrect belief or misunderstanding about a concept.
+
+**Usage:**
+
+```bash
+python student.py misconception add "Concept Name" --belief "incorrect understanding" --correction "correct understanding"
+```
+
+**Arguments:**
+
+- `Concept Name`: Name of the concept (case-insensitive, must exist)
+- `--belief`: The incorrect belief or misunderstanding
+- `--correction`: The correct understanding
+
+**Behavior:**
+
+- Stores misconception with date identified
+- Marks as unresolved (active) by default
+- Prevents duplicate misconceptions (same concept + same belief)
+- Concept must exist (use `add` first if needed)
+
+**Examples:**
+
+```bash
+python student.py misconception add "React Hooks" \
+  --belief "useEffect cleanup runs after every render" \
+  --correction "cleanup runs before next effect or on unmount"
+
+python student.py misconception add "Async/Await" \
+  --belief "await pauses the entire program" \
+  --correction "await only pauses the async function, not other code"
+```
+
+**Output:**
+
+```
+✅ Logged misconception for 'React Hooks'
+   Belief: "useEffect cleanup runs after every render"
+   Correction: "cleanup runs before next effect or on unmount"
+```
+
+---
+
+### `misconception resolve`
+
+Mark a misconception as resolved (no longer a problem).
+
+**Usage:**
+
+```bash
+python student.py misconception resolve "Concept Name" <index>
+```
+
+**Arguments:**
+
+- `Concept Name`: Name of the concept (case-insensitive)
+- `index`: Index number of the misconception (from `misconception list`)
+
+**Behavior:**
+
+- Marks the misconception as resolved
+- Records the resolution date
+- Index only counts unresolved misconceptions for the concept
+- Use `misconception list "Concept Name" --unresolved` to see indices
+
+**Examples:**
+
+```bash
+# First, list to see indices
+python student.py misconception list "React Hooks" --unresolved
+
+# Then resolve by index
+python student.py misconception resolve "React Hooks" 0
+```
+
+**Output:**
+
+```
+✅ Resolved misconception for 'React Hooks'
+   "useEffect cleanup runs after every render"
+```
+
+---
+
+### `misconception list`
+
+List all misconceptions, with optional filtering.
+
+**Usage:**
+
+```bash
+# List all misconceptions
+python student.py misconception list
+
+# List for specific concept
+python student.py misconception list "Concept Name"
+
+# List only unresolved
+python student.py misconception list --unresolved
+
+# List only resolved
+python student.py misconception list --resolved
+
+# Combine filters
+python student.py misconception list "React Hooks" --unresolved
+```
+
+**Arguments:**
+
+- `Concept Name` (optional): Filter by concept
+- `--unresolved` (optional): Show only active misconceptions
+- `--resolved` (optional): Show only resolved misconceptions
+
+**Output Format:**
+
+- Grouped by concept
+- Shows index `[N]` for unresolved misconceptions only
+- Status indicators: ⚠️ Active or ✅ Resolved
+- Dates: identified and (if resolved) resolution date
+
+**Example Output:**
+
+```
+🐛 All Misconceptions (3 total):
+
+📌 React Hooks:
+   [0] ⚠️  Active
+       Belief: "useEffect cleanup runs after every render"
+       Correction: "cleanup runs before next effect or on unmount"
+       Identified: 2024-01-15
+
+   [1] ⚠️  Active
+       Belief: "useState updates are synchronous"
+       Correction: "setState is asynchronous and batched"
+       Identified: 2024-01-16
+
+       ✅ Resolved
+       Belief: "hooks can be called conditionally"
+       Correction: "hooks must be called in the same order every render"
+       Identified: 2024-01-10
+       Resolved: 2024-01-12
+
+📌 Async/Await:
+   [0] ⚠️  Active
+       Belief: "await pauses the entire program"
+       Correction: "await only pauses the async function"
+       Identified: 2024-01-14
+```
+
+---
+
+## Phase 5: Misconception Tracking
+
+### Overview
+
+Misconceptions are explicit records of **incorrect beliefs** that you've identified and corrected. This is different from struggles:
+
+- **Struggle**: "I'm confused about dependency arrays" (vague difficulty)
+- **Misconception**: Belief: "dependency array is optional" / Correction: "omitting it causes effect to run every render"
+
+### Why Track Misconceptions?
+
+1. **Explicit bug modeling**: Surface incorrect mental models
+2. **Pattern recognition**: Identify recurring confusion types
+3. **Teaching moments**: Know exactly what was wrong before
+4. **Progress tracking**: See which misconceptions you've overcome
+
+### When to Log a Misconception
+
+Log a misconception when you:
+
+- Realize you had an incorrect understanding
+- Get corrected by documentation/tutor/testing
+- Discover your mental model was wrong
+- Have an "oh no, I've been doing this wrong!" moment
+
+### Workflow Example
+
+```bash
+# During learning, you realize a misconception
+python student.py misconception add "React Context API" \
+  --belief "Context is for global state management" \
+  --correction "Context is for prop drilling avoidance, not state management"
+
+# Later, check your active misconceptions
+python student.py misconception list "React Context API" --unresolved
+
+# Output:
+# [0] ⚠️  Active
+#     Belief: "Context is for global state management"
+#     Correction: "Context is for prop drilling avoidance, not state management"
+
+# After practicing and confirming you understand
+python student.py misconception resolve "React Context API" 0
+
+# ✅ Resolved misconception for 'React Context API'
+```
+
+### Integration with LLM Tutoring
+
+Your LLM tutor (Claude) can reference your misconceptions when:
+
+- Planning lessons: "You had a misconception about X, let's reinforce Y"
+- Answering questions: "Remember you resolved a misconception about this?"
+- Diagnosing confusion: "This sounds like the misconception you logged about..."
+
 ---
 
 ## Common Workflows
@@ -478,6 +686,21 @@ python student.py show "FastAPI Basics"
 
 # Check prerequisites
 python student.py related "FastAPI Basics"
+```
+
+### Tracking and Resolving Misconceptions
+
+```bash
+# During learning, when you realize you were wrong about something
+python student.py misconception add "FastAPI Basics" \
+  --belief "Depends() creates a new instance each time" \
+  --correction "Depends() uses caching by default for the same request"
+
+# Check your active misconceptions before next session
+python student.py misconception list "FastAPI Basics" --unresolved
+
+# After confirming you understand the correction
+python student.py misconception resolve "FastAPI Basics" 0
 ```
 
 ---
