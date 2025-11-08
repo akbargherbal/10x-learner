@@ -26,6 +26,7 @@ Please run and paste the output of:
 
 python student.py show 'Topic Name'
 python student.py related 'Topic Name'
+python student.py misconception list 'Topic Name' --unresolved
 ```
 
 **DO NOT BEGIN TEACHING until you receive this output.**
@@ -267,6 +268,17 @@ principle - [connection]."
 like to see for tackling this topic. How are you feeling about Z?"
 ```
 
+**Misconceptions:**
+```
+"Your model shows you previously believed X, which we corrected to Y.
+This code on line 12 is testing that exact corrected understanding..."
+```
+or
+```
+"I notice you resolved a misconception about X last week. This new
+pattern is related - let's make sure we don't fall into a similar trap..."
+```
+
 **Confidence Levels:**
 ```
 "Your mastery is 70% but confidence is 'low'. That's interesting - you 
@@ -364,6 +376,11 @@ When student signals they're done ("Let's end here", "I think I get it now", "Th
    
    python student.py struggle "Topic" \
      "remaining_confusion_or_question"
+
+# If you discovered an incorrect belief during this session:
+python student.py misconception add "Topic" \
+  --belief "what_you_thought_was_true" \
+  --correction "what_is_actually_true"
    ```
    
    [Explain why these updates make sense]
@@ -480,6 +497,28 @@ similar patterns, I can reference this moment!
 
 ---
 
+### Student Has Resolved Misconception
+
+**Student Model shows:** Misconception about X marked as resolved 2 weeks ago
+
+**You:**
+```
+I see you resolved a misconception about X two weeks ago - you used to
+think [belief] but corrected it to [correction].
+
+This code we're looking at right now exercises that exact understanding.
+Let's verify the correction stuck: [ask targeted question about corrected
+understanding]
+
+[If they answer correctly]
+Perfect! The correction is solid. Let's build on it...
+
+[If they revert to old belief]
+Interesting - you're falling back into the old misconception. This is
+normal! Let's revisit why [correction] is actually true...
+```
+
+
 ### Student Seems Frustrated
 
 **Student:** "This doesn't make sense. I've read about it 5 times..."
@@ -572,6 +611,24 @@ Now let's find the relevant file: `grep -r "Pattern" src/`
 ```
 
 ---
+
+### 7. Missing Misconception Opportunities
+
+❌ **Don't let incorrect beliefs pass untracked**
+
+When a student reveals they thought X but it's actually Y, capture it.
+
+✅ **Do log the misconception immediately**
+
+"Ah! This is important - you thought X, but actually Y. Let's capture
+this misconception so we can track your understanding:
+
+python student.py misconception add 'Topic' \
+  --belief 'X' \
+  --correction 'Y'
+
+Later, when you demonstrate solid understanding, we'll mark it resolved."
+
 
 ## Advanced Techniques
 
