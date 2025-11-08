@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Architecture Diagrams (Definitive)</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'dark', // Set a high-contrast dark theme
+            securityLevel: 'loose',
+            flowchart: { useMaxWidth: true, htmlLabels: true }
+        });
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #0d1117; /* High-contrast dark background */
+            color: #c9d1d9; /* Light text for high contrast */
+        }
+        .diagram-container {
+            background-color: #161b22; /* Slightly lighter dark for container */
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            margin: 40px 0;
+            border: 1px solid #30363d;
+        }
+        h1, h2 {
+            color: #58a6ff; /* Bright blue for headers */
+            text-align: center;
+            border-bottom: 2px solid #30363d;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .caption {
+            font-style: italic;
+            color: #8b949e; /* Lighter grey for captions */
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.9em;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>System Architecture Diagrams (Definitive)</h1>
+
+    <!-- DIAGRAM 1 -->
+    <div class="diagram-container">
+        <h2>Diagram 1: Tripartite System Architecture</h2>
+        <div class="mermaid">
+graph TD
+    A("THE STUDENT<br/>(Human Learner/User)")
+    
+    subgraph SM [STUDENT MODEL - Persistent]
+        B["- Concepts<br/>- Mastery levels<br/>- Confidence<br/>- Struggles<br/>- Breakthroughs<br/>- Prerequisites<br/><br/>Type: ABSTRACT / CONCEPTUAL<br/>Tool: student.py / JSON"]
+    end
+
+    subgraph WP [WORKSPACE PROTOCOL - Ephemeral]
+        C["- File contents<br/>- Grep results<br/>- Directory structure<br/>- Git history<br/>- Command outputs<br/><br/>Type: CONCRETE / CODE EVIDENCE<br/>Tools: cat, grep, find, ls, git"]
+    end
+
+    D{"CLAUDE<br/>(LLM Synthesis)"}
+    E("GROUNDED, CONTINUOUS<br/>ADAPTIVE TUTORING")
+
+    A -->|Updates & Queries| SM
+    A -->|Investigates & Shares| WP
+    SM -->|Provides context| D
+    WP -->|Provides evidence| D
+    D --> E
+
+    style A fill:#000000,stroke:#58a6ff,stroke-width:3px,color:#ffffff
+    style SM fill:#222222,stroke:#8b949e,stroke-width:2px,stroke-dasharray: 5 5,color:#ffffff
+    style WP fill:#222222,stroke:#8b949e,stroke-width:2px,stroke-dasharray: 5 5,color:#ffffff
+    style D fill:#000000,stroke:#3fb950,stroke-width:3px,color:#ffffff
+    style E fill:#000000,stroke:#db61a2,stroke-width:3px,color:#ffffff
+        </div>
+        <p class="caption"><b>Figure 1:</b> The tripartite system architecture. The Student Model provides persistent conceptual memory across all projects and sessions. The Workspace Protocol provides ephemeral concrete evidence from the current codebase. Claude synthesizes both contexts to deliver grounded, continuous tutoring. The student maintains full control over both information flows.</p>
+    </div>
+
+    <!-- DIAGRAM 2 -->
+    <div class="diagram-container">
+        <h2>Diagram 2: Mandatory Two-Phase Protocol</h2>
+        <div class="mermaid">
+sequenceDiagram
+    actor Student
+    actor Claude
+
+    rect rgb(20, 30, 45)
+        Note over Student, Claude: Phase 1: CONCEPTUAL CONTEXT (Student Model)
+        Student->>Claude: "I want to learn React Context API"
+        Claude-->>Student: REFUSES to teach until context loaded
+        Claude-->>Student: "Please run:<br/>`student.py show 'React Context API'`<br/>`student.py related 'React Context API'`"
+        Student->>Claude: [Runs commands, pastes output]
+        Note right of Claude: NOW HAS:<br/>• Mastery: 45%<br/>• Struggles logged<br/>• Prerequisites known
+    end
+
+    rect rgb(45, 40, 20)
+        Note over Student, Claude: Phase 2: CONCRETE CONTEXT (Workspace Protocol)
+        Claude-->>Student: "What file are you confused about?"
+        Student->>Claude: "TestArea.tsx component"
+        Claude-->>Student: REQUESTS evidence (never assumes)
+        Claude-->>Student: "Run:<br/>`cat packages/.../TestArea.tsx`"
+        Student->>Claude: [Runs command, pastes output]
+        Note right of Claude: NOW HAS:<br/>• Actual file contents<br/>• Line numbers<br/>• Specific code pattern
+    end
+
+    rect rgb(20, 45, 30)
+        Note over Student, Claude: Phase 3: SYNTHESIS & INVESTIGATION
+        Claude-->>Student: "Your model shows you struggled with provider pattern.<br/>Line 50 of TestArea.tsx is exactly that pattern..."
+        Claude-->>Student: Socratic question:<br/>"What do you think useContext returns?"
+        Student->>Claude: "The theme object?"
+        Claude-->>Student: "Let's verify. Run:<br/>`grep -r 'ThemeContext' src/`"
+        Note over Student, Claude: [Investigation continues...]
+    end
+        </div>
+        <p class="caption"><b>Figure 2:</b> The mandatory two-phase protocol for session initialization. Claude refuses to teach until both conceptual context (Student Model) and concrete context (Workspace evidence) are loaded. This prevents both AI amnesia (teaching without memory) and assumption-based tutoring (teaching without evidence). The synthesis phase connects abstract struggles to specific code patterns.</p>
+    </div>
+
+    <!-- DIAGRAM 3 -->
+    <div class="diagram-container">
+        <h2>Diagram 3: Separation of Concerns</h2>
+        <div class="mermaid">
+graph TB
+    subgraph SM ["STUDENT MODEL (student.py)"]
+        direction TB
+        B1["WHAT IT TRACKS:<br/>Abstract concepts<br/>Self-assessed mastery<br/>Subjective confidence<br/>Logged struggles<br/>Prerequisite graph"]
+        B2["CHARACTERISTICS:<br/>Persistent across sessions<br/>Portable across projects<br/>Manually maintained<br/>Simple JSON schema<br/>Slow-changing"]
+        B3["DOES NOT:<br/>Parse code<br/>Track specific files<br/>Store code snippets"]
+        B1 --- B2 --- B3
+    end
+
+    subgraph WP ["WORKSPACE PROTOCOL (Unix Tools)"]
+        direction TB
+        C1["WHAT IT PROVIDES:<br/>Concrete file contents<br/>Search results (grep)<br/>Directory structure (ls)<br/>Historical context (git)<br/>Runtime output"]
+        C2["CHARACTERISTICS:<br/>Ephemeral/session-specific<br/>Project-specific<br/>Always current<br/>No custom tools<br/>Fast-changing"]
+        C3["DOES NOT:<br/>Store anything<br/>Maintain state<br/>Track concepts<br/>Assess mastery"]
+        C1 --- C2 --- C3
+    end
+
+    subgraph CL ["CLAUDE (Integration Layer)"]
+        D["Bridges ABSTRACT to CONCRETE<br/><br/>Your logged struggle with provider pattern<br/>maps to this code on line 50"]
+    end
+
+    SM -.->|Provides context| CL
+    WP -.->|Provides evidence| CL
+
+    style SM fill:#102030,stroke:#58a6ff,stroke-width:3px,color:#ffffff
+    style WP fill:#103020,stroke:#3fb950,stroke-width:3px,color:#ffffff
+    style CL fill:#302010,stroke:#f0a639,stroke-width:3px,color:#ffffff
+    style B1 fill:#152535,stroke:#58a6ff,stroke-width:2px,color:#ffffff
+    style B2 fill:#152535,stroke:#58a6ff,stroke-width:2px,color:#ffffff
+    style B3 fill:#152535,stroke:#58a6ff,stroke-width:2px,color:#ffffff
+    style C1 fill:#153525,stroke:#3fb950,stroke-width:2px,color:#ffffff
+    style C2 fill:#153525,stroke:#3fb950,stroke-width:2px,color:#ffffff
+    style C3 fill:#153525,stroke:#3fb950,stroke-width:2px,color:#ffffff
+    style D fill:#352515,stroke:#f0a639,stroke-width:2px,color:#ffffff
+        </div>
+        <p class="caption"><b>Figure 3:</b> Separation of concerns between Student Model and Workspace Protocol. The Student Model tracks persistent conceptual knowledge that follows the learner across all projects and time. The Workspace Protocol provides ephemeral concrete evidence from the current project session. This architectural boundary enables both continuity (persistent model) and grounding (current code) without requiring complex integration or custom code parsing tools.</p>
+    </div>
+
+    <!-- DIAGRAM 4 -->
+    <div class="diagram-container">
+        <h2>Diagram 4: Evidence-Based Investigation Loop</h2>
+        <div class="mermaid">
+sequenceDiagram
+    actor Claude
+    actor Student
+
+    loop Iteration N
+        Claude->>Student: 1. REQUEST with rationale<br/>"To understand X, let's find Y. Run: `grep -r 'pattern' src/`"
+        Student-->>Student: 2. EXECUTE command
+        Student->>Claude: 3. PROVIDE exact output<br/>[Pastes grep results]
+        
+        Note over Claude: 4. ANALYZE evidence<br/>• Acknowledge what's seen<br/>• Point out relevant parts<br/>• Connect to Student Model
+        
+        par Option A: Socratic Question
+            Claude->>Student: 5a. "What do you think happens on line 50?"
+        and Option B: Next Request
+            Claude->>Student: 5b. "Let's see that file: `cat src/components/TestArea.tsx`"
+        end
+    end
+    
+    Note over Claude, Student: Process repeats in Iteration N+1
+        </div>
+        <p class="caption"><b>Figure 4:</b> The evidence-based investigation loop. Claude requests concrete evidence with clear rationale, analyzes the output, then either asks Socratic questions or requests additional evidence. This tight feedback loop prevents assumptions, maintains focus, and models investigation methodology for the learner. The cycle repeats until sufficient context is gathered for grounded explanation.</p>
+    </div>
+
+    <!-- DIAGRAM 5 -->
+    <div class="diagram-container">
+        <h2>Diagram 5: Session Timeline</h2>
+        <div class="mermaid">
+sequenceDiagram
+    participant Time
+    participant Phase
+    participant Student
+    participant Claude
+
+    Note over Time,Claude: 0:00 - SESSION START
+    
+    rect rgb(20, 30, 45)
+        Note over Time,Claude: 0:01 - Phase 1: Conceptual Context
+        Student->>Student: Run: python student.py show<br/>Run: python student.py related
+        Student->>Claude: Paste output
+        Note right of Claude: Parse context:<br/>• Mastery: 45%<br/>• Struggles noted<br/>• Prerequisites: 55%
+    end
+
+    rect rgb(45, 40, 20)
+        Note over Time,Claude: 0:02 - Phase 2: Workspace Context
+        Student->>Claude: Mention confusing file
+        Claude->>Student: Request workspace evidence
+        Student->>Student: Run: cat path/to/file
+        Student->>Claude: Paste output
+        Note right of Claude: Receive concrete code
+    end
+
+    rect rgb(20, 45, 30)
+        Note over Time,Claude: 0:03-0:30 - Phase 3: Investigation Loop
+        Claude->>Student: Ask Socratic questions
+        Student->>Claude: Answer questions
+        Claude->>Student: Request more evidence
+        Student->>Student: Run: grep ...
+        Student->>Claude: Paste output
+        Note right of Claude: Analyze<br/>Bridge abstract ←→ concrete
+        Student->>Claude: Explain confusion
+        Claude->>Student: Request: cat other-file
+        Student->>Claude: Paste output
+        Student->>Claude: "OH! I get it now"
+        Note right of Claude: Validate insight
+    end
+
+    rect rgb(60, 30, 30)
+        Note over Time,Claude: 0:31 - Phase 4: Session End
+        Student->>Claude: Signal end: "Let's stop here"
+        Note right of Claude: Summarize learning
+        Claude->>Student: Generate commands:<br/>python student.py update ...<br/>python student.py breakthrough ...<br/>python student.py struggle ...
+    end
+
+    rect rgb(60, 60, 60)
+        Note over Time,Claude: 0:33-0:35 - Model Update
+        Student->>Student: Copy-paste commands<br/>Execute updates
+        Student->>Student: Verify: python student.py show
+        Note over Time,Claude: [Session complete]
+    end
+        </div>
+        <p class="caption"><b>Figure 5:</b> Complete session timeline showing temporal flow of a typical 35-minute learning session. Student Model overhead (~2 minutes) occurs at start and end. Workspace commands blend into natural investigation workflow. Total overhead remains under 5% while providing both continuity (Student Model) and grounding (Workspace evidence). The session structure scaffolds metacognitive reflection while maintaining focus on concrete code exploration.</p>
+    </div>
+
+</body>
+</html>
