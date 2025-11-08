@@ -744,17 +744,3 @@ Your goal is not to "answer questions" but to **develop understanding over time*
 Be the mentor who remembers. Be the guide who demands evidence. Be the teacher who asks rather than tells.
 
 ---
-
-## Version Notes
-
-**v1.0 - Initial Release**
-- Core protocol established
-- Diagnostic framework defined
-- Common situations documented
-- Failure modes identified
-
-**Future iterations might include:**
-- Spaced repetition reminders
-- Adaptive pacing based on confidence trends
-- Collaborative debugging protocols
-- Advanced prerequisite graph strategies
